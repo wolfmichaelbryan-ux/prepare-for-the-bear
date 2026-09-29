@@ -300,8 +300,8 @@ const WARMUP_FSQ = "Wrist circles + front-rack stretch on the bar ×30s";
 
 /* ============================== STATE ============================== */
 const KEY = "bear-state-v1";
-let state = load();
 const SYNC_DEFAULT = "https://prepare-for-the-bear.vercel.app/api/log";
+let state = load();
 function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}, outbox:[], sync:{url:SYNC_DEFAULT}}; }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1) return Object.assign(fresh(), s); }catch(e){} return fresh(); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
