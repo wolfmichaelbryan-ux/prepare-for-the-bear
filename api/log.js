@@ -32,8 +32,10 @@ module.exports = async (req, res) => {
 
   try {
     // idempotent: the app retries until it gets a 200, so never write the same session twice
-    const dup = await fetch(`https://api.airtable.com/v0/${BASE}/Sessions?maxRecords=1&filterByFormula=${encodeURIComponent(`{Log ID}=${Number(p.id)}`)}`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }).then(r => r.json());
+    const dupRes = await fetch(`https://api.airtable.com/v0/${BASE}/Sessions?maxRecords=1&filterByFormula=${encodeURIComponent(`{Log ID}=${Number(p.id)}`)}`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } });
+    const dup = await dupRes.json();
+    if (!dupRes.ok) return res.status(502).json({ error: `Airtable read failed (${dupRes.status}) — check the token has data.records:read and access to base ${BASE}`, detail: dup });
     if (dup.records && dup.records.length) return res.status(200).json({ ok: true, session: dup.records[0].id, duplicate: true });
 
     const sessionId = `${String(p.date).slice(0, 10)} ${p.sessName}`;
