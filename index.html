@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Prepare for the Bear</title>
+<meta name="theme-color" content="#0f1113">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bear">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0f1113; --panel:#171a1e; --panel2:#1f2329; --line:#2a2f36; --line2:#363c45;
+    --ink:#f3efe6; --muted:#9aa1a9; --faint:#5f666f;
+    --gold:#f5b400; --gold-ink:#1a1400; --green:#6fd28a; --red:#ff6a5a; --blue:#7cc4ff;
+    --disp:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow",-apple-system,"Helvetica Neue",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%;background:var(--bg)}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;min-height:100dvh;
+       padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  button{font-family:var(--body);color:var(--ink);background:none;border:none;cursor:pointer;font-size:15px}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  input{font-family:var(--disp);font-size:24px;font-weight:700;color:var(--ink);background:var(--panel2);
+        border:1px solid var(--line2);border-radius:10px;width:100%;text-align:center;padding:8px 4px}
+  input:focus{outline:none;border-color:var(--gold)}
+  input::placeholder{color:var(--faint);font-weight:500;font-size:16px;font-family:var(--body)}
+  textarea{font-family:var(--body);font-size:15px;color:var(--ink);background:var(--panel2);border:1px solid var(--line2);
+           border-radius:10px;width:100%;padding:10px;min-height:70px;resize:vertical}
+  .app{max-width:560px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px 0}
+  .view{display:none}.view.on{display:block}
+  h1{font-family:var(--disp);font-weight:800;font-size:40px;line-height:1;letter-spacing:.5px;text-transform:uppercase}
+  h2{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1.05;text-transform:uppercase;letter-spacing:.4px}
+  h3{font-family:var(--disp);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.4px}
+  .eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .muted{color:var(--muted)}.faint{color:var(--faint)}.small{font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+  .row{display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:14px 18px;
+       font-weight:600;font-size:16px;background:var(--panel2);border:1px solid var(--line2)}
+  .btn.primary{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+  .btn.block{display:flex;width:100%}
+  .btn.ghost{background:none;border-color:var(--line)}
+  .btn.danger{color:var(--red);border-color:#5a2b26}
+  .btn:active{transform:translateY(1px)}
+  .pill{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;
+        padding:4px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--muted)}
+  .pill.gold{color:var(--gold);border-color:var(--gold)}
+  .pill.green{color:var(--green);border-color:#2f6b45}
+  .pill.red{color:var(--red);border-color:#6b342f}
+  .num{font-family:var(--disp);font-weight:700}
+  .big{font-family:var(--disp);font-weight:800;font-size:56px;line-height:1}
+  /* tabs */
+  .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(15,17,19,.96);border-top:1px solid var(--line);
+        display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(8px);z-index:20}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+       color:var(--muted);padding:6px 0;font-weight:600}
+  .tab.on{color:var(--gold)}
+  .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  /* session */
+  .exh{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .exname{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1.05;text-transform:uppercase}
+  .cue{color:var(--muted);font-size:13.5px;margin-top:4px;line-height:1.35}
+  .setrow{display:grid;grid-template-columns:34px 1fr 1fr 52px;gap:8px;align-items:center;margin-top:8px}
+  .setrow .lab{font-family:var(--disp);font-weight:700;color:var(--muted);font-size:16px;text-align:center}
+  .setrow .lab.am{color:var(--gold)}
+  .chk{width:52px;height:50px;border-radius:12px;border:1px solid var(--line2);background:var(--panel2);display:flex;align-items:center;justify-content:center}
+  .chk svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .chk.done{background:#1c3a27;border-color:#2f6b45}.chk.done svg{stroke:var(--green)}
+  .hdr{display:grid;grid-template-columns:34px 1fr 1fr 52px;gap:8px;margin-top:10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:center}
+  .ramp{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .ramp span{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:13px;color:var(--muted)}
+  .ramp span b{color:var(--ink);font-family:var(--disp);font-size:16px}
+  .ssbar{display:flex;align-items:center;gap:8px;margin-top:16px}
+  .ssbar .l{flex:1;height:1px;background:var(--line2)}
+  .ssbar .t{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .exskip{opacity:.42}
+  .mini{font-size:12.5px;padding:7px 10px;border-radius:9px;border:1px solid var(--line2);color:var(--muted)}
+  .check-list li{list-style:none;display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .check-list li:last-child{border-bottom:none}
+  .box{width:26px;height:26px;border-radius:7px;border:1px solid var(--line2);flex:none;display:flex;align-items:center;justify-content:center}
+  .box.on{background:#1c3a27;border-color:#2f6b45}
+  .box svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;display:none}
+  .box.on svg{display:block}
+  /* rest timer */
+  .rest{position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom));z-index:25;display:none;justify-content:center;padding:0 12px}
+  .rest.on{display:flex}
+  .rest .in{width:100%;max-width:560px;background:#14171b;border:1px solid var(--gold);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+  .rest .t{font-family:var(--disp);font-weight:800;font-size:38px;line-height:1;color:var(--gold);min-width:88px}
+  .rest .bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+  .rest .bar i{display:block;height:100%;background:var(--gold);width:100%}
+  /* history */
+  .hrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .hrow:last-child{border-bottom:none}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+  th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  td.n{font-family:var(--disp);font-size:20px;font-weight:700}
+  .tmin{width:110px;font-size:20px;padding:6px}
+  /* program doc */
+  .doc h3{margin-top:22px;color:var(--gold)}
+  .doc p,.doc li{color:#d5cfc4;font-size:15px;line-height:1.55;margin-top:8px}
+  .doc ul{padding-left:18px}
+  .doc .note{background:var(--panel2);border-left:3px solid var(--gold);padding:10px 12px;margin-top:10px;border-radius:0 8px 8px 0}
+  .banner{background:#2a2306;border:1px solid #6b5300;border-radius:12px;padding:12px 14px;margin-top:14px;color:#ffd866;font-size:14px}
+  .banner.blue{background:#0f2233;border-color:#1f4d73;color:#a9d6ff}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--gold);color:var(--gold-ink);
+         font-weight:600;padding:10px 16px;border-radius:999px;z-index:30;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast.on{opacity:1}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat .v{font-family:var(--disp);font-weight:800;font-size:30px;line-height:1}
+  .stat .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:4px;font-weight:600}
+  a{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= HOME ================= -->
+  <section class="view on" id="v-home">
+    <div class="eyebrow">Push · Pull · Legs — hypertrophy</div>
+    <h1>Prepare for<br>the Bear</h1>
+    <div id="homeBanner"></div>
+    <div class="card" id="nextCard"></div>
+    <div class="grid2" id="homeStats" style="margin-top:14px"></div>
+    <div class="card">
+      <div class="eyebrow">Rotation</div>
+      <div id="rotList" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <!-- ================= SESSION ================= -->
+  <section class="view" id="v-session">
+    <div class="row" style="justify-content:space-between">
+      <div><div class="eyebrow" id="sEyebrow"></div><h2 id="sTitle"></h2></div>
+      <button class="mini" id="sAbort">Exit</button>
+    </div>
+    <div id="sBody"></div>
+    <div class="card">
+      <div class="eyebrow">Session notes</div>
+      <textarea id="sNote" placeholder="How it felt, anything to change, what to tell Claude…" style="margin-top:8px"></textarea>
+    </div>
+    <button class="btn primary block" id="sFinish" style="margin-top:14px">Finish session</button>
+    <div style="height:20px"></div>
+  </section>
+
+  <!-- ================= SUMMARY ================= -->
+  <section class="view" id="v-summary">
+    <div class="eyebrow">Logged</div>
+    <h2 id="sumTitle">Session complete</h2>
+    <div id="sumBody"></div>
+    <button class="btn primary block" id="sumHome" style="margin-top:16px">Back to today</button>
+  </section>
+
+  <!-- ================= HISTORY ================= -->
+  <section class="view" id="v-history">
+    <div class="eyebrow">Log</div>
+    <h2>History</h2>
+    <div class="card" id="histList"></div>
+  </section>
+  <section class="view" id="v-histdetail">
+    <button class="mini" id="hdBack">← History</button>
+    <div style="margin-top:10px"><div class="eyebrow" id="hdEyebrow"></div><h2 id="hdTitle"></h2></div>
+    <div id="hdBody"></div>
+    <button class="btn danger block" id="hdDelete" style="margin-top:16px">Delete this session</button>
+  </section>
+
+  <!-- ================= MAXES ================= -->
+  <section class="view" id="v-maxes">
+    <div class="eyebrow">Numbers</div>
+    <h2>Training maxes</h2>
+    <p class="muted small" style="margin-top:6px">Set by your calibration set the first time each lift comes up, then adjusted by your AMRAP set every session. Edit here if you know better.</p>
+    <div class="card"><table id="tmTable"></table></div>
+    <div class="card">
+      <div class="eyebrow">Best estimated 1RMs</div>
+      <table id="bestTable" style="margin-top:6px"></table>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Data</div>
+      <div class="row" style="margin-top:10px;flex-wrap:wrap">
+        <button class="btn" id="exportBtn">Export backup</button>
+        <label class="btn" for="importFile">Import backup</label>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="row small muted" style="gap:8px"><input type="checkbox" id="soundChk" style="width:22px;height:22px"> Rest-timer beep</label>
+      </div>
+      <button class="btn danger" id="resetBtn" style="margin-top:14px">Reset everything</button>
+    </div>
+  </section>
+
+  <!-- ================= PROGRAM ================= -->
+  <section class="view" id="v-program">
+    <div class="eyebrow">The plan</div>
+    <h2>How this works</h2>
+    <div class="doc" id="progDoc"></div>
+  </section>
+</div>
+
+<!-- rest timer -->
+<div class="rest" id="rest"><div class="in">
+  <div class="t" id="restT">1:30</div>
+  <div class="bar"><i id="restBar"></i></div>
+  <button class="mini" id="restSkip">Skip</button>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- tabs -->
+<nav class="tabs">
+  <button class="tab on" data-v="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
+  <button class="tab" data-v="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</button>
+  <button class="tab" data-v="maxes"><svg viewBox="0 0 24 24"><path d="M3 12h3M18 12h3M6 8v8M18 8v8M8 6v12M16 6v12M8 12h8"/></svg>Maxes</button>
+  <button class="tab" data-v="program"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z M8 10h8M8 14h8"/></svg>Program</button>
+</nav>
+
+<script>
+/* ============================== PROGRAM DATA ============================== */
+const SEEDS = {bench:285, ohp:175, fsq:260, tbdl:400, rdl:265};
+const TM_NAME = {bench:"Bench press", ohp:"Overhead press", fsq:"Front squat", tbdl:"Trap bar deadlift", rdl:"Romanian deadlift"};
+const TM_INC = {bench:5, ohp:5, fsq:10, tbdl:10, rdl:10};
+const ROTATION = ["pushA","pullA","legsA","pushB","pullB","legsB"];
+
+/* kind: main (TM/%), acc (double progression), bw (bodyweight +load), core, plyo, cardio */
+const EX = {
+  bench:   {n:"Barbell bench press", kind:"main", tm:"bench", pct:.75, sets:4, reps:6, cap:12, rir:1, rest:150, cue:"Safeties set. Last set AMRAP, stop at 1 in the tank."},
+  ohp:     {n:"Strict overhead press", kind:"main", tm:"ohp", pct:.75, sets:4, reps:6, cap:12, rir:1, rest:150, cue:"Ribs down, squeeze glutes, bar path close to the face. No leg drive."},
+  tbdl:    {n:"Trap bar deadlift", kind:"main", tm:"tbdl", pct:.75, sets:4, reps:5, cap:10, rir:1, rest:180, cue:"Your lift. Brace, push the floor away, don't shrug at the top."},
+  rdl:     {n:"Romanian deadlift", kind:"main", tm:"rdl", pct:.70, sets:4, reps:8, cap:12, rir:2, rest:150, cue:"Hips back, soft knees, bar on the thighs. Stop at a hamstring stretch — never a yank. RIR 2, always."},
+  fsq:     {n:"Front squat", kind:"main", tm:"fsq", pct:.75, sets:4, reps:6, cap:10, rir:1, rest:180, cue:"Clean grip, elbows high. Depth to just before the lean — own it, don't chase it."},
+  incDb:   {n:"Incline DB press", kind:"acc", sets:3, lo:8, hi:12, start:70, inc:5, rest:90, unit:"lb/hand", cue:"30° incline. Elbows ~45°."},
+  pullups: {n:"Pull-ups", kind:"bw", sets:3, lo:8, hi:12, start:0, inc:5, rest:90, unit:"+lb", cue:"Bodyweight. AMRAP each set. When you hit 12+ on all three, add weight next time."},
+  landmine:{n:"Landmine press", kind:"acc", sets:3, lo:8, hi:12, start:60, inc:5, rest:75, unit:"lb on bar", cue:"Neck-friendly vertical press. Half-kneeling or standing, press up and away."},
+  cableLat:{n:"Cable lateral raise", kind:"acc", sets:3, lo:12, hi:15, start:15, inc:5, rest:60, unit:"lb", cue:"Lead with the elbow, no shrug — keep the trap out of it."},
+  skull:   {n:"EZ-bar skullcrusher", kind:"acc", sets:3, lo:10, hi:12, start:65, inc:5, rest:60, unit:"lb", cue:"Bar to forehead/behind head. Elbows stay in."},
+  pushdown:{n:"Rope pushdown", kind:"acc", sets:2, lo:12, hi:15, start:50, inc:10, rest:60, unit:"lb", cue:"Split the rope at the bottom."},
+  dips:    {n:"Dips", kind:"bw", sets:3, lo:8, hi:12, start:0, inc:5, rest:90, unit:"+lb", cue:"Slight forward lean. When 12+ on all sets, add weight."},
+  facepull:{n:"Face pull", kind:"acc", sets:3, lo:15, hi:20, start:40, inc:5, rest:60, unit:"lb", cue:"Pull to the eyes, thumbs back. Rear delts, not traps."},
+  flatDb:  {n:"Flat DB press", kind:"acc", sets:3, lo:8, hi:12, start:75, inc:5, rest:90, unit:"lb/hand", cue:"Full stretch at the bottom, controlled."},
+  dbLat:   {n:"DB lateral raise", kind:"acc", sets:3, lo:12, hi:15, start:20, inc:5, rest:60, unit:"lb/hand", cue:"Slow down the negative."},
+  ohTri:   {n:"Overhead cable triceps ext", kind:"acc", sets:3, lo:10, hi:12, start:50, inc:10, rest:60, unit:"lb", cue:"Long-head stretch — elbows by the ears."},
+  cableFlye:{n:"Cable flye", kind:"acc", sets:2, lo:12, hi:15, start:25, inc:5, rest:60, unit:"lb/side", cue:"Squeeze at the middle, stretch at the end."},
+  csRow:   {n:"Chest-supported incline DB row", kind:"acc", sets:3, lo:8, hi:12, start:55, inc:5, rest:90, unit:"lb/hand", cue:"Chest on the bench — the neck-safe row. Drive elbows to the hips."},
+  pallof:  {n:"Pallof press", kind:"core", sets:3, lo:10, hi:10, start:30, inc:5, rest:45, unit:"lb", per:"side", cue:"Anti-rotation. Press out, hold 2s, resist the twist."},
+  latPull: {n:"Lat pulldown", kind:"acc", sets:3, lo:10, hi:12, start:140, inc:10, rest:75, unit:"lb", cue:"Lean back slightly, pull to the upper chest."},
+  rearDelt:{n:"Rear-delt cable fly", kind:"acc", sets:3, lo:15, hi:20, start:15, inc:5, rest:60, unit:"lb/side", cue:"Arms long, sweep back. Light weight, big squeeze."},
+  ezCurl:  {n:"EZ-bar curl", kind:"acc", sets:3, lo:10, hi:12, start:65, inc:5, rest:60, unit:"lb", cue:"No swing. Elbows pinned."},
+  hammer:  {n:"Hammer curl", kind:"acc", sets:2, lo:10, hi:12, start:35, inc:5, rest:60, unit:"lb/hand", cue:"Neutral grip, controlled."},
+  wPull:   {n:"Weighted pull-ups", kind:"bw", sets:4, lo:6, hi:8, start:25, inc:5, rest:120, unit:"+lb", cue:"Belt or DB between the feet. Full hang, chin over."},
+  cableRow:{n:"Seated cable row (neutral)", kind:"acc", sets:3, lo:10, hi:12, start:140, inc:10, rest:75, unit:"lb", cue:"Chest up, squeeze the blades — no shrug."},
+  slCurl:  {n:"Single-leg leg curl", kind:"acc", sets:3, lo:10, hi:12, start:35, inc:5, rest:60, unit:"lb", per:"side", cue:"Weak-side check: do the weaker leg first, match reps on the other."},
+  incCurl: {n:"Incline DB curl", kind:"acc", sets:3, lo:10, hi:12, start:30, inc:5, rest:60, unit:"lb/hand", cue:"Arms hang back — long-head stretch."},
+  ropeHam: {n:"Rope hammer curl", kind:"acc", sets:2, lo:12, hi:15, start:50, inc:10, rest:60, unit:"lb", cue:"Squeeze at the top."},
+  legPress:{n:"Leg press", kind:"acc", sets:3, lo:10, hi:15, start:360, inc:20, rest:90, unit:"lb (plates)", cue:"Feet mid-platform. Full depth, knees track over toes."},
+  deadbug: {n:"Dead bug", kind:"core", sets:3, lo:8, hi:8, start:0, inc:0, rest:45, unit:"bw", per:"side", cue:"Low back glued to the floor. Slow."},
+  legCurl: {n:"Lying leg curl", kind:"acc", sets:3, lo:8, hi:12, start:90, inc:10, rest:75, unit:"lb", cue:"Hips down. 3-second lowering — the hamstring insurance policy."},
+  bss:     {n:"Bulgarian split squat", kind:"acc", sets:3, lo:8, hi:10, start:30, inc:5, rest:90, unit:"lb/hand", per:"side", cue:"Right leg first. Tall torso, easy on the hip."},
+  nordic:  {n:"Nordic hamstring curl", kind:"bw", sets:2, lo:5, hi:5, start:0, inc:0, rest:90, unit:"level", cue:"Level 1: band-assisted · 2: partial, hands catch · 3: full. Lower slow, push back up. Log the level as the weight."},
+  ssb:     {n:"Safety-bar squat", kind:"acc", sets:4, lo:8, hi:10, start:205, inc:10, rest:150, unit:"lb (bar incl.)", cue:"Pad sits clear of the bump. Sit between the hips, chest up."},
+  hipThrust:{n:"Barbell hip thrust", kind:"acc", sets:3, lo:10, hi:12, start:185, inc:10, rest:90, unit:"lb", cue:"Chin tucked, ribs down, squeeze 2s at the top."},
+  legCurlB:{n:"Leg curl (seated or lying)", kind:"acc", sets:3, lo:10, hi:15, start:80, inc:10, rest:60, unit:"lb", cue:"Higher reps today. Smooth."},
+  lunges:  {n:"Walking lunges", kind:"acc", sets:3, lo:10, hi:10, start:25, inc:5, rest:90, unit:"lb/hand", per:"side", cue:"Long stride, knee soft, drive through the heel."},
+  legExt:  {n:"Leg extension", kind:"acc", sets:3, lo:12, hi:15, start:100, inc:10, rest:60, unit:"lb", cue:"Pause at the top."},
+  slRdl:   {n:"Single-leg RDL", kind:"acc", sets:2, lo:8, hi:8, start:35, inc:5, rest:60, unit:"lb DB", per:"side", cue:"Balance + hamstring. Hips square, soft knee."},
+};
+
+const SESS = {
+  pushA:{name:"Push A", sub:"Bench day", mins:"~55 min", main:"bench",
+    blocks:[{t:"main",ex:["bench"]},{t:"ss",ex:["incDb","pullups"]},{t:"ss",ex:["landmine","cableLat"]},{t:"ss",ex:["skull","pushdown"]}],
+    finisher:"Optional: 8 min bike — 4 × (30s hard / 90s easy)."},
+  pullA:{name:"Pull A", sub:"Trap bar day", mins:"~60–65 min", main:"tbdl",
+    blocks:[{t:"main",ex:["tbdl"]},{t:"ss",ex:["csRow","pallof"]},{t:"ss",ex:["latPull","rearDelt"]},{t:"ss",ex:["ezCurl","hammer"]}]},
+  legsA:{name:"Legs A", sub:"Front squat day", mins:"~55 min", main:"fsq",
+    plyo:["Pogo hops 2×15","Box jumps 3×3 (moderate box, step down)","Lateral bounds 2×5/side — stick the landing"],
+    blocks:[{t:"main",ex:["fsq"]},{t:"ss",ex:["legPress","deadbug"]},{t:"ss",ex:["legCurl","bss"]},{t:"single",ex:["nordic"]}]},
+  pushB:{name:"Push B", sub:"Overhead day", mins:"~55 min", main:"ohp",
+    blocks:[{t:"main",ex:["ohp"]},{t:"ss",ex:["dips","facepull"]},{t:"ss",ex:["flatDb","dbLat"]},{t:"ss",ex:["ohTri","cableFlye"]}],
+    finisher:"Optional: 8 min bike — 4 × (30s hard / 90s easy)."},
+  pullB:{name:"Pull B", sub:"RDL + pull-up day", mins:"~55 min", main:"rdl",
+    blocks:[{t:"main",ex:["rdl"]},{t:"ss",ex:["wPull","cableRow"]},{t:"ss",ex:["slCurl","facepull"]},{t:"ss",ex:["incCurl","ropeHam"]}]},
+  legsB:{name:"Legs B", sub:"Safety-bar + posterior day", mins:"~55 min", main:null,
+    plyo:["Pogo hops 2×15","Broad jumps 3×3 — stick it","Skater hops 2×6/side"],
+    practice:"At practice today (once you're loose): 3 × 40 m sprint build-ups — 60% → 80% → 85%, walk back between. No max sprints.",
+    blocks:[{t:"single",ex:["ssb"]},{t:"ss",ex:["hipThrust","pallof"]},{t:"ss",ex:["legCurlB","lunges"]},{t:"ss",ex:["legExt","slRdl"]}]},
+};
+const WARMUP = ["Bike — 2 min easy","90/90 hip switches ×6/side","Adductor rock-backs ×8","Standing thoracic extension ×8","Band pull-aparts ×15","Chin nods ×8 (gentle)"];
+const WARMUP_FSQ = "Wrist circles + front-rack stretch on the bar ×30s";
+
+/* ============================== STATE ============================== */
+const KEY = "bear-state-v1";
+let state = load();
+function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}}; }
+function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1) return Object.assign(fresh(), s); }catch(e){} return fresh(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+/* ============================== HELPERS ============================== */
+const $ = id => document.getElementById(id);
+const rnd = (x, step=5) => Math.round(x/step)*step;
+const e1rm = (w, r) => Math.round(w * (1 + Math.min(r,12)/30));
+const fmtDate = iso => new Date(iso).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const fmtT = s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),2200); }
+function show(v){ document.querySelectorAll(".view").forEach(x=>x.classList.remove("on")); $("v-"+v).classList.add("on");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===v)); window.scrollTo(0,0); }
+const ICON_CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>';
+const sessionsDone = () => state.logs.length;
+const week = () => Math.floor(sessionsDone()/3)+1;
+
+/* ============================== PRESCRIPTION ============================== */
+function prescribe(ex){
+  const deload = state.deloadLeft > 0;
+  if(ex.kind==="main"){
+    const tm = state.tm[ex.tm];
+    if(!tm){
+      const seed = SEEDS[ex.tm];
+      return {calib:true, ramp:[[.4,8],[.55,5],[.65,3]].map(([p,r])=>({w:rnd(seed*p),r})),
+              sets:[{w:rnd(seed*.75), amrap:true, target:"AMRAP · aim 6–10", rir:ex.rir}]};
+    }
+    const mult = deload ? 0.8 : 1;
+    const w = rnd(tm*ex.pct*mult);
+    const ramp = [[.45,6],[.6,4],[.7,2]].map(([p,r])=>({w:rnd(tm*p*mult),r}));
+    const sets=[];
+    const n = deload ? ex.sets-1 : ex.sets;
+    for(let i=0;i<n;i++){
+      const last = (i===n-1) && !deload;
+      sets.push(last ? {w, amrap:true, target:`AMRAP · cap ${ex.cap}`, rir:ex.rir} : {w, r:ex.reps, rir:ex.rir+1});
+    }
+    return {calib:false, ramp, sets, deload};
+  }
+  const L = state.last[ex.key];
+  let w = ex.start;
+  let bumped = false;
+  if(L && L.reps && L.reps.length){
+    const allTop = L.reps.every(r => r >= ex.hi);
+    if(allTop && ex.inc>0){ w = L.w + ex.inc; bumped = true; } else w = L.w;
+  }
+  const n = deload ? Math.max(1, ex.sets-1) : ex.sets;
+  const sets=[]; for(let i=0;i<n;i++) sets.push({w, range: ex.lo===ex.hi ? `${ex.lo}` : `${ex.lo}–${ex.hi}`, rir:2});
+  return {sets, bumped, deload};
+}
+
+/* ============================== HOME ============================== */
+function renderHome(){
+  const key = ROTATION[state.cursor], s = SESS[key];
+  const deload = state.deloadLeft>0;
+  $("homeBanner").innerHTML = deload
+    ? `<div class="banner">Deload rotation — ${state.deloadLeft} session${state.deloadLeft>1?"s":""} left. Loads −20%, one set fewer, no AMRAP. Move well, recover.</div>`
+    : (sessionsDone()===0 ? `<div class="banner blue">First pass = calibration. Each main lift works up to one honest top set; the app sets your training max from it. Warm up, then be honest on the AMRAP.</div>` : "");
+  const mainEx = s.main ? EX[s.main] : null;
+  const calib = mainEx && !state.tm[mainEx.tm];
+  $("nextCard").innerHTML = `
+    <div class="eyebrow">Next up · session ${sessionsDone()+1} · week ${week()}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:6px">
+      <div><div class="big">${s.name}</div><div class="muted">${s.sub} · ${s.mins}</div></div>
+      ${calib ? '<span class="pill gold">Calibrate</span>' : ''}
+    </div>
+    <div class="muted small" style="margin-top:10px">${s.blocks.map(b=>b.ex.map(k=>EX[k].n).join(" / ")).join(" · ")}</div>
+    <button class="btn primary block" id="startBtn" style="margin-top:14px">Start ${s.name}</button>
+    <button class="btn ghost block small" id="changeBtn" style="margin-top:8px">Do a different session</button>`;
+  $("startBtn").onclick = ()=> startSession(key);
+  $("changeBtn").onclick = ()=>{
+    const pick = prompt("Which session? 1 Push A · 2 Pull A · 3 Legs A · 4 Push B · 5 Pull B · 6 Legs B", String(state.cursor+1));
+    const i = parseInt(pick,10)-1; if(i>=0 && i<6){ state.cursor=i; save(); renderHome(); }
+  };
+  const lastLog = state.logs[state.logs.length-1];
+  const tmSet = Object.keys(state.tm).length;
+  $("homeStats").innerHTML = `
+    <div class="stat"><div class="v">${sessionsDone()}</div><div class="k">Sessions logged</div></div>
+    <div class="stat"><div class="v">${lastLog ? fmtDate(lastLog.date) : "—"}</div><div class="k">Last lift</div></div>
+    <div class="stat"><div class="v">${state.rotations}</div><div class="k">Rotations done</div></div>
+    <div class="stat"><div class="v">${tmSet}/5</div><div class="k">Maxes calibrated</div></div>`;
+  $("rotList").innerHTML = ROTATION.map((k,i)=>`<div class="row" style="padding:7px 0;border-bottom:1px solid var(--line);${i===state.cursor?"":"opacity:.55"}">
+     <span class="num" style="width:22px;color:${i===state.cursor?"var(--gold)":"var(--faint)"}">${i+1}</span>
+     <span style="flex:1">${SESS[k].name} <span class="muted small">— ${SESS[k].sub}</span></span>${i===state.cursor?'<span class="pill gold">next</span>':""}</div>`).join("");
+}
+
+/* ============================== SESSION ============================== */
+let cur = null; // {key, started, ex:{key:{sets:[{w,r,done}], skip}}, plyo:[bool], warm:[bool]}
+function startSession(key){
+  const s = SESS[key];
+  cur = {key, started:Date.now(), ex:{}, warm:WARMUP.map(()=>false), plyo:(s.plyo||[]).map(()=>false), fin:false};
+  s.blocks.forEach(b=>b.ex.forEach(k=>{
+    const ex = Object.assign({key:k}, EX[k]);
+    const p = prescribe(ex);
+    cur.ex[k] = {p, sets:p.sets.map(st=>({w:st.w, r:(st.r!=null?st.r:""), done:false})), skip:false};
+  }));
+  renderSession(); show("session"); requestWake();
+}
+function renderSession(){
+  const s = SESS[cur.key];
+  $("sEyebrow").textContent = `${s.sub} · ${s.mins}`;
+  $("sTitle").textContent = s.name;
+  let html = "";
+  // warm-up
+  const wu = WARMUP.slice(); if(s.main==="fsq") wu.push(WARMUP_FSQ);
+  html += `<div class="card"><div class="eyebrow">Warm-up · ~7 min</div><ul class="check-list" style="margin-top:6px">` +
+    wu.map((w,i)=>`<li data-warm="${i}"><div class="box ${cur.warm[i]?"on":""}">${ICON_CHECK}</div><span>${w}</span></li>`).join("") + `</ul></div>`;
+  if(s.plyo){
+    html += `<div class="card"><div class="eyebrow">Plyos · after warm-up, ~5 min</div><ul class="check-list" style="margin-top:6px">` +
+      s.plyo.map((w,i)=>`<li data-plyo="${i}"><div class="box ${cur.plyo[i]?"on":""}">${ICON_CHECK}</div><span>${w}</span></li>`).join("") + `</ul></div>`;
+  }
+  if(s.practice && sessionsDone() >= 9){
+    html += `<div class="banner blue">${s.practice}</div>`;
+  }
+  s.blocks.forEach((b,bi)=>{
+    if(b.t==="ss") html += `<div class="ssbar"><span class="t">Superset ${bi}</span><span class="l"></span><span class="faint small">alternate, rest after the pair</span></div>`;
+    b.ex.forEach(k=> html += exCard(k));
+  });
+  if(s.finisher) html += `<div class="card muted small">${s.finisher}</div>`;
+  $("sBody").innerHTML = html;
+  bindSession();
+}
+function exCard(k){
+  const ex = EX[k], c = cur.ex[k], p = c.p;
+  const isMain = ex.kind==="main";
+  const unit = isMain ? "lb" : ex.unit;
+  const skipCls = c.skip ? "exskip" : "";
+  let head = `<div class="exh"><div><div class="exname">${ex.n}</div><div class="cue">${ex.cue||""}${ex.per?` <span class="pill" style="margin-left:4px">per side</span>`:""}</div></div>
+    <button class="mini" data-skip="${k}">${c.skip?"Unskip":"Skip"}</button></div>`;
+  let meta = "";
+  if(isMain){
+    meta += p.calib
+      ? `<div class="banner" style="margin-top:10px">Calibration: ramp up, then one honest top set. Aim 6–10 reps with ${ex.rir} in the tank. This sets your training max.</div>`
+      : `<div class="row small muted" style="margin-top:8px;gap:6px;flex-wrap:wrap"><span class="pill gold">${p.deload?"Deload":Math.round(ex.pct*100)+"% TM"}</span><span>TM ${state.tm[ex.tm]} lb</span><span>· rest ${fmtT(ex.rest)}</span></div>`;
+    meta += `<div class="ramp">${p.ramp.map(r=>`<span>ramp <b>${r.w}</b> × ${r.r}</span>`).join("")}</div>`;
+  } else {
+    meta += `<div class="row small muted" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+      <span class="pill">${ex.sets}${p.deload?"→"+p.sets.length:""} × ${ex.lo===ex.hi?ex.lo:ex.lo+"–"+ex.hi}${ex.per?"/side":""}</span>
+      <span>RIR 2 · rest ${fmtT(ex.rest)}</span>${p.bumped?'<span class="pill green">↑ load bumped</span>':""}</div>`;
+  }
+  let rows = `<div class="hdr"><span>Set</span><span>${unit}</span><span>Reps</span><span></span></div>`;
+  c.sets.forEach((st,i)=>{
+    const ps = p.sets[i];
+    const am = ps.amrap;
+    rows += `<div class="setrow">
+      <span class="lab ${am?"am":""}">${am?"AM":i+1}</span>
+      <input type="number" inputmode="decimal" value="${st.w}" data-w="${k}" data-i="${i}" placeholder="${unit}">
+      <input type="number" inputmode="numeric" value="${st.r}" data-r="${k}" data-i="${i}" placeholder="${am?(ps.target||"AMRAP"):(ps.range||ps.r)}">
+      <button class="chk ${st.done?"done":""}" data-done="${k}" data-i="${i}" aria-label="Set done">${ICON_CHECK}</button>
+    </div>`;
+    if(am && ps.rir!=null) rows += `<div class="faint small" style="text-align:right;margin-top:3px">stop at RIR ${ps.rir}</div>`;
+  });
+  return `<div class="card ${skipCls}" id="ex-${k}">${head}${meta}${rows}</div>`;
+}
+function bindSession(){
+  $("sBody").querySelectorAll("[data-warm]").forEach(li=>li.onclick=()=>{ const i=+li.dataset.warm; cur.warm[i]=!cur.warm[i]; li.querySelector(".box").classList.toggle("on",cur.warm[i]); });
+  $("sBody").querySelectorAll("[data-plyo]").forEach(li=>li.onclick=()=>{ const i=+li.dataset.plyo; cur.plyo[i]=!cur.plyo[i]; li.querySelector(".box").classList.toggle("on",cur.plyo[i]); });
+  $("sBody").querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{ const k=b.dataset.skip; cur.ex[k].skip=!cur.ex[k].skip; $("ex-"+k).classList.toggle("exskip",cur.ex[k].skip); b.textContent=cur.ex[k].skip?"Unskip":"Skip"; });
+  $("sBody").querySelectorAll("[data-w]").forEach(inp=>inp.oninput=()=>{ cur.ex[inp.dataset.w].sets[+inp.dataset.i].w = parseFloat(inp.value)||0; });
+  $("sBody").querySelectorAll("[data-r]").forEach(inp=>inp.oninput=()=>{ cur.ex[inp.dataset.r].sets[+inp.dataset.i].r = inp.value===""?"":parseInt(inp.value,10)||0; });
+  $("sBody").querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.done, i=+b.dataset.i, st=cur.ex[k].sets[i];
+    if(!st.done){
+      if(st.r==="" || st.r===0){ const inp=$("sBody").querySelector(`[data-r="${k}"][data-i="${i}"]`); inp.focus(); toast("Enter reps first"); return; }
+      st.done=true; b.classList.add("done"); startRest(EX[k].rest);
+    } else { st.done=false; b.classList.remove("done"); }
+  });
+}
+$("sAbort").onclick = ()=>{ if(confirm("Exit without saving this session?")){ cur=null; releaseWake(); stopRest(); show("home"); } };
+$("sFinish").onclick = finishSession;
+
+function finishSession(){
+  const s = SESS[cur.key];
+  const anyDone = Object.values(cur.ex).some(c=>c.sets.some(st=>st.done));
+  if(!anyDone){ toast("Nothing logged yet — tick a set"); return; }
+  const log = {id:Date.now(), date:new Date().toISOString(), sess:cur.key, entries:{}, note:$("sNote").value.trim(), tmChanges:[], prs:[], dur:Math.round((Date.now()-cur.started)/60000), deload: state.deloadLeft>0};
+  s.blocks.forEach(b=>b.ex.forEach(k=>{
+    const ex = EX[k], c = cur.ex[k];
+    const done = c.sets.filter(st=>st.done && st.r!=="");
+    log.entries[k] = {skip:c.skip, sets:c.sets.map(st=>({w:st.w, r:st.r, done:st.done}))};
+    if(c.skip || !done.length) return;
+    if(ex.kind==="main"){
+      const best = done.reduce((m,st)=> Math.max(m, e1rm(st.w, st.r)), 0);
+      if(c.p.calib){
+        const tm = rnd(best*0.9);
+        state.tm[ex.tm] = tm; log.tmChanges.push(`${TM_NAME[ex.tm]}: training max set to ${tm} lb (est. 1RM ${best})`);
+      } else if(!c.p.deload){
+        const am = c.sets[c.sets.length-1];
+        if(am.done && am.r!==""){
+          const r = am.r, old = state.tm[ex.tm];
+          if(r >= 10){ state.tm[ex.tm] = old + TM_INC[ex.tm]; log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP → TM ${old} → ${state.tm[ex.tm]}`); }
+          else if(r <= 5){ state.tm[ex.tm] = rnd(old*0.95); log.tmChanges.push(`${TM_NAME[ex.tm]}: only ${r} on the AMRAP → TM ${old} → ${state.tm[ex.tm]}`); }
+          else log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP → TM holds at ${old}`);
+        }
+      }
+      if(best > (state.best[ex.tm]||0)){ if(state.best[ex.tm]) log.prs.push(`${TM_NAME[ex.tm]} est. 1RM ${best} (was ${state.best[ex.tm]})`); state.best[ex.tm]=best; }
+    } else {
+      const w = done[done.length-1].w;
+      const prev = state.last[k];
+      state.last[k] = {w, reps:done.map(st=>st.r), date:log.date};
+      if(prev && w>prev.w) log.prs.push(`${ex.n}: up to ${w} ${ex.unit}`);
+    }
+  }));
+  state.logs.push(log);
+  if(state.deloadLeft>0) state.deloadLeft--;
+  state.cursor = (state.cursor+1) % 6;
+  if(state.cursor===0){ state.rotations++; if(state.rotations % 3 === 0) state.deloadLeft = 6; }
+  save(); releaseWake(); stopRest();
+  renderSummary(log); cur=null; $("sNote").value=""; show("summary");
+}
+function renderSummary(log){
+  const s = SESS[log.sess];
+  $("sumTitle").textContent = `${s.name} logged`;
+  let html = `<div class="card"><div class="muted small">${fmtDate(log.date)} · ${log.dur} min</div>`;
+  if(log.tmChanges.length) html += `<div class="eyebrow" style="margin-top:12px">Training max</div>` + log.tmChanges.map(t=>`<p style="margin-top:6px">${t}</p>`).join("");
+  if(log.prs.length) html += `<div class="eyebrow" style="margin-top:12px">Progress</div>` + log.prs.map(t=>`<p style="margin-top:6px">↑ ${t}</p>`).join("");
+  html += `</div>`;
+  if(state.deloadLeft===6) html += `<div class="banner">Three rotations done — next six sessions are a deload. Loads −20%, one set fewer. Then we climb again.</div>`;
+  html += `<div class="card"><div class="eyebrow">Next up</div><div class="big" style="margin-top:6px">${SESS[ROTATION[state.cursor]].name}</div></div>`;
+  $("sumBody").innerHTML = html;
+}
+$("sumHome").onclick = ()=>{ renderHome(); show("home"); };
+
+/* ============================== HISTORY ============================== */
+function renderHistory(){
+  const L = state.logs.slice().reverse();
+  $("histList").innerHTML = L.length ? L.map(l=>`<div class="hrow" data-log="${l.id}">
+      <div><div class="num" style="font-size:20px">${SESS[l.sess].name}${l.deload?' <span class="pill">deload</span>':""}</div><div class="muted small">${fmtDate(l.date)} · ${l.dur} min${l.prs.length?" · "+l.prs.length+" PR":""}</div></div>
+      <span class="muted">›</span></div>`).join("") : `<p class="muted">No sessions yet. Go lift.</p>`;
+  $("histList").querySelectorAll("[data-log]").forEach(r=>r.onclick=()=>renderHistDetail(+r.dataset.log));
+}
+function renderHistDetail(id){
+  const l = state.logs.find(x=>x.id===id); if(!l) return;
+  const s = SESS[l.sess];
+  $("hdEyebrow").textContent = `${fmtDate(l.date)} · ${l.dur} min`;
+  $("hdTitle").textContent = s.name;
+  let html = "";
+  s.blocks.forEach(b=>b.ex.forEach(k=>{
+    const e = l.entries[k]; if(!e) return;
+    const ex = EX[k];
+    const done = e.sets.filter(st=>st.done);
+    html += `<div class="card ${e.skip?"exskip":""}"><div class="exname" style="font-size:18px">${ex.n}</div>
+      <div class="muted" style="margin-top:6px">${e.skip?"skipped":(done.length? done.map(st=>`<b class="num" style="color:var(--ink);font-size:18px">${st.w}</b>×${st.r}`).join(" &nbsp; ") : "not logged")}</div></div>`;
+  }));
+  if(l.tmChanges.length) html += `<div class="card"><div class="eyebrow">Training max</div>${l.tmChanges.map(t=>`<p class="small" style="margin-top:6px">${t}</p>`).join("")}</div>`;
+  if(l.note) html += `<div class="card"><div class="eyebrow">Notes</div><p style="margin-top:6px">${l.note.replace(/</g,"&lt;")}</p></div>`;
+  $("hdBody").innerHTML = html;
+  $("hdDelete").onclick = ()=>{ if(confirm("Delete this session? Training maxes won't be reverted (edit them in Maxes if needed).")){ state.logs = state.logs.filter(x=>x.id!==id); save(); renderHistory(); show("history"); } };
+  show("histdetail");
+}
+$("hdBack").onclick = ()=>{ renderHistory(); show("history"); };
+
+/* ============================== MAXES ============================== */
+function renderMaxes(){
+  $("tmTable").innerHTML = `<tr><th>Lift</th><th>Training max</th><th></th></tr>` + Object.keys(TM_NAME).map(k=>`<tr>
+    <td>${TM_NAME[k]}<div class="faint small">${state.tm[k]?"":"not yet calibrated · seed "+SEEDS[k]}</div></td>
+    <td><input class="tmin" type="number" inputmode="numeric" value="${state.tm[k]||""}" data-tm="${k}" placeholder="—"></td>
+    <td><button class="mini" data-recal="${k}">Recal</button></td></tr>`).join("");
+  $("tmTable").querySelectorAll("[data-tm]").forEach(inp=>inp.onchange=()=>{ const v=parseInt(inp.value,10); if(v>0){ state.tm[inp.dataset.tm]=rnd(v); } else delete state.tm[inp.dataset.tm]; save(); renderMaxes(); toast("Saved"); });
+  $("tmTable").querySelectorAll("[data-recal]").forEach(b=>b.onclick=()=>{ if(confirm("Clear this max so the next session re-calibrates it?")){ delete state.tm[b.dataset.recal]; save(); renderMaxes(); } });
+  $("bestTable").innerHTML = Object.keys(TM_NAME).map(k=>`<tr><td>${TM_NAME[k]}</td><td class="n">${state.best[k]||"—"}</td></tr>`).join("");
+  $("soundChk").checked = !!state.settings.sound;
+}
+$("soundChk").onchange = e=>{ state.settings.sound = e.target.checked; save(); };
+$("exportBtn").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state,null,1)],{type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `bear-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove();
+};
+$("importFile").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader(); rd.onload = ()=>{ try{ const s=JSON.parse(rd.result); if(s.v===1 && s.logs){ state=Object.assign(fresh(),s); save(); renderMaxes(); renderHome(); toast("Backup restored"); } else toast("Not a Bear backup"); }catch(err){ toast("Couldn't read that file"); } };
+  rd.readAsText(f); e.target.value="";
+};
+$("resetBtn").onclick = ()=>{ if(confirm("Wipe all maxes and history? Export a backup first if you want it.")){ state=fresh(); save(); renderMaxes(); renderHome(); toast("Reset"); } };
+
+/* ============================== PROGRAM DOC ============================== */
+$("progDoc").innerHTML = `
+<h3>The idea</h3>
+<p>Three lifts a week, 50–60 minutes each, built for size first and strength second — around a neck that doesn't want single-arm rows, hamstrings that have pulled twice, and a right hip that likes to stay warm.</p>
+<h3>The rotation</h3>
+<p>Days are unpredictable, so there's no weekly schedule. It's a six-session loop and you just do whatever's next: <b>Push A → Pull A → Legs A → Push B → Pull B → Legs B</b>. Over two weeks every muscle gets two different sessions.</p>
+<h3>Calibration (first pass)</h3>
+<p>The first time each main lift comes up — bench, overhead press, trap bar, RDL, front squat — you warm up and take one honest top set (aim 6–10 reps, 1 in the tank). The app estimates your 1RM from it and sets a <b>training max at 90%</b> of that. Every lift after that runs off percentages of the training max.</p>
+<h3>How the main lifts progress</h3>
+<ul>
+<li>3 working sets at the prescribed load, then a final <b>AMRAP</b> set at the same load, stopping at the RIR shown (never a grinder, never a miss).</li>
+<li><b>10+ reps</b> on the AMRAP → training max goes up next time (+5 lb upper body, +10 lb lower). <b>6–9</b> → holds. <b>5 or fewer</b> → training max drops 5%.</li>
+<li>Trap bar and front squat cap the AMRAP at 10; bench and press at 12. RDL is always RIR 2 — hamstrings get respect.</li>
+</ul>
+<h3>How accessories progress</h3>
+<p><b>Double progression.</b> Every exercise has a rep range and a starting load. When you hit the top of the range on every set (with ~2 in the tank), the app bumps the load next time and flags it. Pull-ups and dips: once you get 12+ on all sets bodyweight, start adding weight. Nordics: level 1 band-assisted → level 2 partial with hands catching → level 3 full.</p>
+<h3>RIR — reps in reserve</h3>
+<p>How many more reps you could have done. RIR 1 = one left in the tank. It's the self-correction layer: on a six-hour-sleep day, if the prescribed load feels like RIR 0, back off — the number is a target, your body is the referee.</p>
+<h3>Deloads</h3>
+<p>After every three full rotations (~6 weeks), the next six sessions are a deload: loads −20%, one set fewer, no AMRAP. The first one lands right around the Nov 8 in-season switch.</p>
+<h3>The rules that keep you healthy</h3>
+<ul>
+<li><b>Neck:</b> no single-arm or Meadows rows, no heavy shrugs, no behind-the-neck anything. Rows are chest-supported or cable. Lateral raises without shrugging. If the right upper trap or shoulder blade lights up, stop that exercise and note it.</li>
+<li><b>Hamstrings:</b> hit every session they can — RDL, leg curls (3-second negatives), Nordics, single-leg work to find the weaker side. Sprint build-ups only at practice, only once you're warm, never at max.</li>
+<li><b>Hip:</b> 90/90s and adductor rock-backs in every warm-up. Front squat to the depth you own before the lean. Unilateral work is a friend.</li>
+<li><b>Bar on the neck:</b> never. Front squat (clean grip) and safety-bar only.</li>
+</ul>
+<h3>Warm-up (every day, ~7 min)</h3>
+<p>Bike 2 min → 90/90 hip switches → adductor rock-backs → standing thoracic extension → band pull-aparts → chin nods → ramp sets of the main lift (the app lists them). Leg days add 5 minutes of low-volume plyos after the warm-up.</p>
+<h3>Nutrition</h3>
+<div class="note"><b>Training days:</b> post-lift shake around 9:30 — 30–40 g whey + 5 g creatine — then your normal window. <b>Every day:</b> creatine 5 g, protein 160–175 g in ~4 feedings, most carbs around training and practice. Recomp at 177: maintenance to a slight deficit, weigh weekly.</div>
+<h3>Feedback loop</h3>
+<p>Every exercise can be skipped, every session has notes. React day by day — tell Claude what felt off — and the program gets patched.</p>`;
+
+/* ============================== REST TIMER ============================== */
+let restT=null, restLeft=0, restTotal=0;
+function startRest(sec){ stopRest(); restTotal=sec; restLeft=sec; $("rest").classList.add("on"); tickRest(); restT=setInterval(tickRest,1000); }
+function tickRest(){ $("restT").textContent=fmtT(Math.max(0,restLeft)); $("restBar").style.width=(100*restLeft/restTotal)+"%"; if(restLeft<=0){ stopRest(); beep(); return; } restLeft--; }
+function stopRest(){ clearInterval(restT); restT=null; $("rest").classList.remove("on"); }
+$("restSkip").onclick = stopRest;
+let actx=null;
+function beep(){ if(!state.settings.sound) return; try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); const t=actx.currentTime; [0,0.18].forEach(d=>{ const o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=880; g.gain.setValueAtTime(0,t+d); g.gain.linearRampToValueAtTime(.2,t+d+.02); g.gain.exponentialRampToValueAtTime(.0001,t+d+.15); o.connect(g); g.connect(actx.destination); o.start(t+d); o.stop(t+d+.16); }); }catch(e){} }
+document.addEventListener("click", ()=>{ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==="suspended") actx.resume(); }catch(e){} }, {once:true});
+
+/* ============================== WAKE LOCK ============================== */
+let wl=null;
+async function requestWake(){ try{ if("wakeLock" in navigator && !wl){ wl = await navigator.wakeLock.request("screen"); wl.addEventListener("release",()=>{wl=null;}); } }catch(e){ wl=null; } }
+function releaseWake(){ try{ if(wl){ wl.release(); wl=null; } }catch(e){} }
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && cur) requestWake(); });
+
+/* ============================== NAV / INIT ============================== */
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  const v=t.dataset.v;
+  if(cur && v!=="home" && !confirm("Leave the session? It stays open — come back from Today.")) return;
+  if(v==="home") renderHome(); if(v==="history") renderHistory(); if(v==="maxes") renderMaxes();
+  show(v);
+});
+renderHome();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script>
+</body>
+</html>
