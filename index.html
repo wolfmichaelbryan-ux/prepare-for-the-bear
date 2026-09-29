@@ -182,6 +182,13 @@
       <table id="bestTable" style="margin-top:6px"></table>
     </div>
     <div class="card">
+      <div class="eyebrow">Sync to Claude</div>
+      <p class="muted small" style="margin-top:6px">Finished sessions are sent to an Airtable log Claude can read. Nothing else leaves the phone.</p>
+      <div id="syncStatus" style="margin-top:10px"></div>
+      <input type="url" id="syncUrl" placeholder="endpoint URL" style="font-family:var(--body);font-size:14px;font-weight:400;text-align:left;margin-top:10px">
+      <div class="row" style="margin-top:10px"><button class="btn" id="syncNow">Sync now</button></div>
+    </div>
+    <div class="card">
       <div class="eyebrow">Data</div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap">
         <button class="btn" id="exportBtn">Export backup</button>
@@ -294,7 +301,8 @@ const WARMUP_FSQ = "Wrist circles + front-rack stretch on the bar ×30s";
 /* ============================== STATE ============================== */
 const KEY = "bear-state-v1";
 let state = load();
-function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}}; }
+const SYNC_DEFAULT = "https://prepare-for-the-bear.vercel.app/api/log";
+function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}, outbox:[], sync:{url:SYNC_DEFAULT}}; }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1) return Object.assign(fresh(), s); }catch(e){} return fresh(); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 
@@ -334,14 +342,18 @@ function prescribe(ex){
   }
   const L = state.last[ex.key];
   let w = ex.start;
-  let bumped = false;
+  let bumped = false, eased = false;
   if(L && L.reps && L.reps.length){
     const allTop = L.reps.every(r => r >= ex.hi);
-    if(allTop && ex.inc>0){ w = L.w + ex.inc; bumped = true; } else w = L.w;
+    const under = L.reps.filter(r => r < ex.lo).length;
+    const tooHeavy = (L.reps[0] < ex.lo) || under >= 2;   /* first set short, or 2+ sets short */
+    if(allTop && ex.inc>0){ w = L.w + ex.inc; bumped = true; }
+    else if(tooHeavy && ex.inc>0){ w = Math.max(0, L.w - ex.inc); eased = true; }
+    else w = L.w;
   }
   const n = deload ? Math.max(1, ex.sets-1) : ex.sets;
   const sets=[]; for(let i=0;i<n;i++) sets.push({w, range: ex.lo===ex.hi ? `${ex.lo}` : `${ex.lo}–${ex.hi}`, rir:2});
-  return {sets, bumped, deload};
+  return {sets, bumped, eased, deload};
 }
 
 /* ============================== HOME ============================== */
@@ -431,7 +443,7 @@ function exCard(k){
   } else {
     meta += `<div class="row small muted" style="margin-top:8px;gap:6px;flex-wrap:wrap">
       <span class="pill">${ex.sets}${p.deload?"→"+p.sets.length:""} × ${ex.lo===ex.hi?ex.lo:ex.lo+"–"+ex.hi}${ex.per?"/side":""}</span>
-      <span>RIR 2 · rest ${fmtT(ex.rest)}</span>${p.bumped?'<span class="pill green">↑ load bumped</span>':""}</div>`;
+      <span>RIR 2 · rest ${fmtT(ex.rest)}</span>${p.bumped?'<span class="pill green">↑ load bumped</span>':""}${p.eased?'<span class="pill red">↓ load eased</span>':""}</div>`;
   }
   let rows = `<div class="hdr"><span>Set</span><span>${unit}</span><span>Reps</span><span></span></div>`;
   c.sets.forEach((st,i)=>{
@@ -472,7 +484,7 @@ function finishSession(){
   s.blocks.forEach(b=>b.ex.forEach(k=>{
     const ex = EX[k], c = cur.ex[k];
     const done = c.sets.filter(st=>st.done && st.r!=="");
-    log.entries[k] = {skip:c.skip, sets:c.sets.map(st=>({w:st.w, r:st.r, done:st.done}))};
+    log.entries[k] = {skip:c.skip, sets:c.sets.map((st,i)=>({w:st.w, r:st.r, done:st.done, amrap:!!(c.p.sets[i]&&c.p.sets[i].amrap)}))};
     if(c.skip || !done.length) return;
     if(ex.kind==="main"){
       const best = done.reduce((m,st)=> Math.max(m, e1rm(st.w, st.r)), 0);
@@ -490,9 +502,11 @@ function finishSession(){
       }
       if(best > (state.best[ex.tm]||0)){ if(state.best[ex.tm]) log.prs.push(`${TM_NAME[ex.tm]} est. 1RM ${best} (was ${state.best[ex.tm]})`); state.best[ex.tm]=best; }
     } else {
-      const w = done[done.length-1].w;
+      /* next load is judged on the FIRST working weight; a mid-exercise drop doesn't sandbag next time */
+      const w = done[0].w;
+      const atW = done.filter(st=>st.w===w);
       const prev = state.last[k];
-      state.last[k] = {w, reps:done.map(st=>st.r), date:log.date};
+      state.last[k] = {w, reps:atW.map(st=>st.r), date:log.date};
       if(prev && w>prev.w) log.prs.push(`${ex.n}: up to ${w} ${ex.unit}`);
     }
   }));
@@ -500,9 +514,51 @@ function finishSession(){
   if(state.deloadLeft>0) state.deloadLeft--;
   state.cursor = (state.cursor+1) % 6;
   if(state.cursor===0){ state.rotations++; if(state.rotations % 3 === 0) state.deloadLeft = 6; }
+  state.outbox.push(buildPayload(log));
   save(); releaseWake(); stopRest();
   renderSummary(log); cur=null; $("sNote").value=""; show("summary");
+  trySync();
 }
+
+/* ============================== SYNC (to Airtable via the Vercel endpoint) ============================== */
+function buildPayload(log){
+  const s = SESS[log.sess]; const sets = []; const lines = [];
+  s.blocks.forEach(b=>b.ex.forEach(k=>{
+    const e = log.entries[k]; if(!e) return; const ex = EX[k];
+    const unit = ex.kind==="main" ? "lb" : ex.unit;
+    const done = e.sets.filter(st=>st.done && st.r!=="");
+    if(e.skip){ lines.push(`${ex.n}: skipped`); }
+    else if(done.length) lines.push(`${ex.n}: ${done.map(st=>`${st.w}×${st.r}${st.amrap?"*":""}`).join(", ")}`);
+    e.sets.forEach((st,i)=>{
+      if(!st.done && !e.skip) return;
+      sets.push({exercise:ex.n, key:k, unit, setNo:i+1, w:st.w, r:st.r===""?null:st.r, amrap:!!st.amrap, skipped:!!e.skip,
+                 e1rm:(ex.kind==="main" && st.done && st.r!=="") ? e1rm(st.w, st.r) : null});
+    });
+  }));
+  return {id:log.id, date:log.date, sess:log.sess, sessName:s.name, minutes:log.dur, note:log.note, tmChanges:log.tmChanges, prs:log.prs, deload:!!log.deload, summary:lines.join("\n"), sets};
+}
+let syncing = false;
+async function trySync(){
+  if(syncing || !state.sync || !state.sync.url || !state.outbox.length || !navigator.onLine) { renderSyncStatus(); return; }
+  syncing = true;
+  try{
+    while(state.outbox.length){
+      const item = state.outbox[0];
+      const r = await fetch(state.sync.url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(item)});
+      if(!r.ok) break;
+      state.outbox.shift();
+      const l = state.logs.find(x=>x.id===item.id); if(l) l.synced = true;
+      save();
+    }
+  }catch(e){}
+  syncing = false; renderSyncStatus();
+}
+function renderSyncStatus(){
+  const el = $("syncStatus"); if(!el) return;
+  const n = state.outbox.length;
+  el.innerHTML = n ? `<span class="pill red">${n} session${n>1?"s":""} waiting to sync</span>` : `<span class="pill green">all sessions synced</span>`;
+}
+window.addEventListener("online", trySync);
 function renderSummary(log){
   const s = SESS[log.sess];
   $("sumTitle").textContent = `${s.name} logged`;
@@ -520,7 +576,7 @@ $("sumHome").onclick = ()=>{ renderHome(); show("home"); };
 function renderHistory(){
   const L = state.logs.slice().reverse();
   $("histList").innerHTML = L.length ? L.map(l=>`<div class="hrow" data-log="${l.id}">
-      <div><div class="num" style="font-size:20px">${SESS[l.sess].name}${l.deload?' <span class="pill">deload</span>':""}</div><div class="muted small">${fmtDate(l.date)} · ${l.dur} min${l.prs.length?" · "+l.prs.length+" PR":""}</div></div>
+      <div><div class="num" style="font-size:20px">${SESS[l.sess].name}${l.deload?' <span class="pill">deload</span>':""}</div><div class="muted small">${fmtDate(l.date)} · ${l.dur} min${l.prs.length?" · "+l.prs.length+" PR":""} · ${l.synced?'<span style="color:var(--green)">synced</span>':'<span style="color:var(--red)">not synced</span>'}</div></div>
       <span class="muted">›</span></div>`).join("") : `<p class="muted">No sessions yet. Go lift.</p>`;
   $("histList").querySelectorAll("[data-log]").forEach(r=>r.onclick=()=>renderHistDetail(+r.dataset.log));
 }
@@ -555,7 +611,11 @@ function renderMaxes(){
   $("tmTable").querySelectorAll("[data-recal]").forEach(b=>b.onclick=()=>{ if(confirm("Clear this max so the next session re-calibrates it?")){ delete state.tm[b.dataset.recal]; save(); renderMaxes(); } });
   $("bestTable").innerHTML = Object.keys(TM_NAME).map(k=>`<tr><td>${TM_NAME[k]}</td><td class="n">${state.best[k]||"—"}</td></tr>`).join("");
   $("soundChk").checked = !!state.settings.sound;
+  $("syncUrl").value = (state.sync && state.sync.url) || "";
+  renderSyncStatus();
 }
+$("syncUrl").onchange = e=>{ state.sync = state.sync || {}; state.sync.url = e.target.value.trim(); save(); toast("Endpoint saved"); };
+$("syncNow").onclick = ()=>{ if(!state.outbox.length){ toast("Nothing waiting"); return; } toast("Syncing…"); trySync().then(()=> toast(state.outbox.length ? "Still waiting — check the endpoint" : "Synced")); };
 $("soundChk").onchange = e=>{ state.settings.sound = e.target.checked; save(); };
 $("exportBtn").onclick = ()=>{
   const blob = new Blob([JSON.stringify(state,null,1)],{type:"application/json"});
@@ -626,6 +686,9 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   show(v);
 });
 renderHome();
+/* one-time: queue any sessions logged before sync existed */
+if(!state.outbox.length && state.logs.some(l=>!l.synced)){ state.logs.filter(l=>!l.synced).forEach(l=>state.outbox.push(buildPayload(l))); save(); }
+trySync();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
 </body>
