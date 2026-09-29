@@ -373,8 +373,12 @@ function renderHome(){
     </div>
     <div class="muted small" style="margin-top:10px">${s.blocks.map(b=>b.ex.map(k=>EX[k].n).join(" / ")).join(" · ")}</div>
     <button class="btn primary block" id="startBtn" style="margin-top:14px">Start ${s.name}</button>
-    <button class="btn ghost block small" id="changeBtn" style="margin-top:8px">Do a different session</button>`;
+    <div class="row" style="margin-top:8px">
+      <button class="btn ghost small" id="previewBtn" style="flex:1">Preview</button>
+      <button class="btn ghost small" id="changeBtn" style="flex:1">Different session</button>
+    </div>`;
   $("startBtn").onclick = ()=> startSession(key);
+  $("previewBtn").onclick = ()=> startSession(key, true);
   $("changeBtn").onclick = ()=>{
     const pick = prompt("Which session? 1 Push A · 2 Pull A · 3 Legs A · 4 Push B · 5 Pull B · 6 Legs B", String(state.cursor+1));
     const i = parseInt(pick,10)-1; if(i>=0 && i<6){ state.cursor=i; save(); renderHome(); }
@@ -393,15 +397,15 @@ function renderHome(){
 
 /* ============================== SESSION ============================== */
 let cur = null; // {key, started, ex:{key:{sets:[{w,r,done}], skip}}, plyo:[bool], warm:[bool]}
-function startSession(key){
+function startSession(key, preview=false){
   const s = SESS[key];
-  cur = {key, started:Date.now(), ex:{}, warm:WARMUP.map(()=>false), plyo:(s.plyo||[]).map(()=>false), fin:false};
+  cur = {key, preview, started:Date.now(), ex:{}, warm:WARMUP.map(()=>false), plyo:(s.plyo||[]).map(()=>false), fin:false};
   s.blocks.forEach(b=>b.ex.forEach(k=>{
     const ex = Object.assign({key:k}, EX[k]);
     const p = prescribe(ex);
     cur.ex[k] = {p, sets:p.sets.map(st=>({w:st.w, r:(st.r!=null?st.r:""), done:false})), skip:false};
   }));
-  renderSession(); show("session"); requestWake();
+  renderSession(); show("session"); if(!preview) requestWake();
 }
 function renderSession(){
   const s = SESS[cur.key];
@@ -424,7 +428,10 @@ function renderSession(){
     b.ex.forEach(k=> html += exCard(k));
   });
   if(s.finisher) html += `<div class="card muted small">${s.finisher}</div>`;
+  if(cur.preview) html = `<div class="banner blue">Preview — nothing is being logged. Loads shown are what you'd get if you started now.</div>` + html;
   $("sBody").innerHTML = html;
+  $("sFinish").textContent = cur.preview ? `Start ${s.name} for real` : "Finish session";
+  $("sAbort").textContent = cur.preview ? "Close" : "Exit";
   bindSession();
 }
 function exCard(k){
@@ -473,8 +480,8 @@ function bindSession(){
     } else { st.done=false; b.classList.remove("done"); }
   });
 }
-$("sAbort").onclick = ()=>{ if(confirm("Exit without saving this session?")){ cur=null; releaseWake(); stopRest(); show("home"); } };
-$("sFinish").onclick = finishSession;
+$("sAbort").onclick = ()=>{ if(cur && cur.preview){ cur=null; renderHome(); show("home"); return; } if(confirm("Exit without saving this session?")){ cur=null; releaseWake(); stopRest(); show("home"); } };
+$("sFinish").onclick = ()=>{ if(cur && cur.preview){ const k=cur.key; startSession(k, false); return; } finishSession(); };
 
 function finishSession(){
   const s = SESS[cur.key];
