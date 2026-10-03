@@ -187,6 +187,10 @@
       <div id="syncStatus" style="margin-top:10px"></div>
       <input type="url" id="syncUrl" placeholder="endpoint URL" style="font-family:var(--body);font-size:14px;font-weight:400;text-align:left;margin-top:10px">
       <div class="row" style="margin-top:10px"><button class="btn" id="syncNow">Sync now</button></div>
+      <div class="eyebrow" style="margin-top:18px">Multi-device</div>
+      <p class="muted small" style="margin-top:6px">Maxes, progress and history are saved to the cloud after every session and pulled when the app opens, so any phone picks up where the last one left off.</p>
+      <div id="cloudStatus" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="cloudPull">Pull from cloud</button><button class="btn" id="cloudPush">Push to cloud</button></div>
     </div>
     <div class="card">
       <div class="eyebrow">Data</div>
@@ -301,8 +305,9 @@ const WARMUP_FSQ = "Wrist circles + front-rack stretch on the bar ×30s";
 /* ============================== STATE ============================== */
 const KEY = "bear-state-v1";
 const SYNC_DEFAULT = "https://prepare-for-the-bear.vercel.app/api/log";
+const CLOUD_DEFAULT = "https://prepare-for-the-bear.vercel.app/api/state";
 let state = load();
-function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}, outbox:[], sync:{url:SYNC_DEFAULT}}; }
+function fresh(){ return {v:1, tm:{}, best:{}, cursor:0, logs:[], last:{}, rotations:0, deloadLeft:0, settings:{sound:true}, outbox:[], sync:{url:SYNC_DEFAULT}, updated:null}; }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.v===1) return Object.assign(fresh(), s); }catch(e){} return fresh(); }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
 
@@ -496,21 +501,25 @@ function finishSession(){
     if(ex.kind==="main"){
       const best = done.reduce((m,st)=> Math.max(m, e1rm(st.w, st.r)), 0);
       if(c.p.calib){
-        const tm = rnd(best*0.9);
+        const bestCal = done.reduce((m,st)=> Math.max(m, Math.round(st.w*(1+Math.min(st.r,15)/30))), 0);
+        const tm = rnd(bestCal*0.9);
         state.tm[ex.tm] = tm; log.tmChanges.push(`${TM_NAME[ex.tm]}: training max set to ${tm} lb (est. 1RM ${best})`);
       } else if(!c.p.deload){
         const am = c.sets[c.sets.length-1];
         if(am.done && am.r!==""){
           const r = am.r, old = state.tm[ex.tm];
-          if(r >= 10){ state.tm[ex.tm] = old + TM_INC[ex.tm]; log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP → TM ${old} → ${state.tm[ex.tm]}`); }
+          if(r >= 15){ state.tm[ex.tm] = rnd(old*1.05); log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP — crushed it → TM ${old} → ${state.tm[ex.tm]} (+5%)`); }
+          else if(r >= 10){ state.tm[ex.tm] = old + TM_INC[ex.tm]; log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP → TM ${old} → ${state.tm[ex.tm]}`); }
           else if(r <= 5){ state.tm[ex.tm] = rnd(old*0.95); log.tmChanges.push(`${TM_NAME[ex.tm]}: only ${r} on the AMRAP → TM ${old} → ${state.tm[ex.tm]}`); }
           else log.tmChanges.push(`${TM_NAME[ex.tm]}: ${r} on the AMRAP → TM holds at ${old}`);
         }
       }
       if(best > (state.best[ex.tm]||0)){ if(state.best[ex.tm]) log.prs.push(`${TM_NAME[ex.tm]} est. 1RM ${best} (was ${state.best[ex.tm]})`); state.best[ex.tm]=best; }
     } else {
-      /* next load is judged on the FIRST working weight; a mid-exercise drop doesn't sandbag next time */
-      const w = done[0].w;
+      /* next load keys off the HEAVIEST weight that still reached the bottom of the rep range —
+         ramping up mid-session counts, a drop after a too-heavy start doesn't sandbag next time */
+      const hit = done.filter(st=>st.r >= ex.lo);
+      const w = hit.length ? Math.max(...hit.map(st=>st.w)) : done[0].w;
       const atW = done.filter(st=>st.w===w);
       const prev = state.last[k];
       state.last[k] = {w, reps:atW.map(st=>st.r), date:log.date};
@@ -522,10 +531,69 @@ function finishSession(){
   state.cursor = (state.cursor+1) % 6;
   if(state.cursor===0){ state.rotations++; if(state.rotations % 3 === 0) state.deloadLeft = 6; }
   state.outbox.push(buildPayload(log));
+  state.updated = new Date().toISOString();
   save(); releaseWake(); stopRest();
   renderSummary(log); cur=null; $("sNote").value=""; show("summary");
-  trySync();
+  trySync(); pushCloud();
 }
+
+/* ============================== CLOUD SAVE (multi-device) ============================== */
+function deviceId(){ try{ let d=localStorage.getItem("bear-device"); if(!d){ d=Math.random().toString(36).slice(2,8); localStorage.setItem("bear-device",d);} return d; }catch(e){ return "dev"; } }
+function cloudUrl(){ return (state.sync && state.sync.url ? state.sync.url.replace(/\/api\/log\/?$/,"/api/state") : CLOUD_DEFAULT); }
+function metaOf(){
+  if(!state.updated) state.updated = state.logs.length ? state.logs[state.logs.length-1].date : new Date().toISOString();
+  return {v:1, tm:state.tm, best:state.best, last:state.last, cursor:state.cursor, rotations:state.rotations, deloadLeft:state.deloadLeft, updated:state.updated, device:deviceId(), logCount:state.logs.length};
+}
+let cloudBusy=false, cloudInfo={last:null, note:""};
+async function pushCloud(){
+  if(cloudBusy || !navigator.onLine) return;
+  cloudBusy=true;
+  try{
+    const logs = state.logs.filter(l=>!l.cloud).map(l=>({id:l.id, date:l.date, sess:l.sess, json:JSON.stringify(l)}));
+    const r = await fetch(cloudUrl(), {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({meta:metaOf(), logs})});
+    if(r.ok){ state.logs.forEach(l=>l.cloud=true); cloudInfo={last:new Date().toISOString(), note:"pushed"}; save(); }
+    else cloudInfo.note = "push failed ("+r.status+")";
+  }catch(e){ cloudInfo.note="push failed (offline?)"; }
+  cloudBusy=false; renderCloudStatus();
+}
+function mergeCloud(data){
+  let addedLogs=0, adopted=false;
+  const have = new Set(state.logs.map(l=>l.id));
+  (data.logs||[]).forEach(txt=>{ try{ const l=JSON.parse(txt); if(l && l.id && !have.has(l.id)){ l.cloud=true; l.synced=true; state.logs.push(l); have.add(l.id); addedLogs++; } }catch(e){} });
+  state.logs.sort((a,b)=>a.id-b.id);
+  const m = data.meta;
+  if(m && typeof m==="object"){
+    if(!state.updated && state.logs.length) state.updated = state.logs[state.logs.length-1].date;
+    const cloudNewer = !state.updated || (!!m.updated && m.updated > state.updated);
+    const A = cloudNewer ? m : state, B = cloudNewer ? state : m;   // A wins ties on scalar fields
+    const tm = Object.assign({}, B.tm||{}, A.tm||{});
+    const best = {}; new Set([...Object.keys(A.best||{}), ...Object.keys(B.best||{})]).forEach(k=> best[k]=Math.max((A.best||{})[k]||0, (B.best||{})[k]||0));
+    const last = {}; new Set([...Object.keys(A.last||{}), ...Object.keys(B.last||{})]).forEach(k=>{ const a=(A.last||{})[k], b=(B.last||{})[k]; last[k] = !b ? a : !a ? b : (((a.date||"") >= (b.date||"")) ? a : b); });
+    state.tm=tm; state.best=best; state.last=last;
+    if(cloudNewer){ if(m.cursor!=null) state.cursor=m.cursor; if(m.rotations!=null) state.rotations=m.rotations; if(m.deloadLeft!=null) state.deloadLeft=m.deloadLeft; state.updated=m.updated||state.updated; adopted=true; }
+  }
+  return {addedLogs, adopted};
+}
+async function pullCloud(){
+  if(cloudBusy || !navigator.onLine) { renderCloudStatus(); return; }
+  cloudBusy=true; let res=null;
+  try{
+    const r = await fetch(cloudUrl(), {headers:{"Accept":"application/json"}});
+    if(r.ok){ const data = await r.json(); res = mergeCloud(data); save(); cloudInfo={last:new Date().toISOString(), note:"pulled"}; }
+    else cloudInfo.note = "pull failed ("+r.status+")";
+  }catch(e){ cloudInfo.note="pull failed (offline?)"; }
+  cloudBusy=false;
+  if(res && (res.addedLogs || res.adopted)){ renderHome(); if(res.addedLogs) toast(`Merged ${res.addedLogs} session${res.addedLogs>1?"s":""} from your other device`); }
+  renderCloudStatus();
+  if(res) pushCloud();   // send back anything this device had that the cloud didn't
+}
+function renderCloudStatus(){
+  const el=$("cloudStatus"); if(!el) return;
+  const pending = state.logs.filter(l=>!l.cloud).length;
+  el.innerHTML = `<span class="pill ${pending?"red":"green"}">${pending ? pending+" session"+(pending>1?"s":"")+" not in cloud yet" : "cloud up to date"}</span>
+    <div class="faint small" style="margin-top:6px">this device: ${deviceId()}${cloudInfo.last?" · last "+cloudInfo.note+" "+new Date(cloudInfo.last).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):""}</div>`;
+}
+window.addEventListener("online", pullCloud);
 
 /* ============================== SYNC (to Airtable via the Vercel endpoint) ============================== */
 function buildPayload(log){
@@ -614,13 +682,15 @@ function renderMaxes(){
     <td>${TM_NAME[k]}<div class="faint small">${state.tm[k]?"":"not yet calibrated · seed "+SEEDS[k]}</div></td>
     <td><input class="tmin" type="number" inputmode="numeric" value="${state.tm[k]||""}" data-tm="${k}" placeholder="—"></td>
     <td><button class="mini" data-recal="${k}">Recal</button></td></tr>`).join("");
-  $("tmTable").querySelectorAll("[data-tm]").forEach(inp=>inp.onchange=()=>{ const v=parseInt(inp.value,10); if(v>0){ state.tm[inp.dataset.tm]=rnd(v); } else delete state.tm[inp.dataset.tm]; save(); renderMaxes(); toast("Saved"); });
-  $("tmTable").querySelectorAll("[data-recal]").forEach(b=>b.onclick=()=>{ if(confirm("Clear this max so the next session re-calibrates it?")){ delete state.tm[b.dataset.recal]; save(); renderMaxes(); } });
+  $("tmTable").querySelectorAll("[data-tm]").forEach(inp=>inp.onchange=()=>{ const v=parseInt(inp.value,10); if(v>0){ state.tm[inp.dataset.tm]=rnd(v); } else delete state.tm[inp.dataset.tm]; state.updated=new Date().toISOString(); save(); renderMaxes(); toast("Saved"); pushCloud(); });
+  $("tmTable").querySelectorAll("[data-recal]").forEach(b=>b.onclick=()=>{ if(confirm("Clear this max so the next session re-calibrates it?")){ delete state.tm[b.dataset.recal]; state.updated=new Date().toISOString(); save(); renderMaxes(); pushCloud(); } });
   $("bestTable").innerHTML = Object.keys(TM_NAME).map(k=>`<tr><td>${TM_NAME[k]}</td><td class="n">${state.best[k]||"—"}</td></tr>`).join("");
   $("soundChk").checked = !!state.settings.sound;
   $("syncUrl").value = (state.sync && state.sync.url) || "";
-  renderSyncStatus();
+  renderSyncStatus(); renderCloudStatus();
 }
+$("cloudPull").onclick = ()=>{ toast("Pulling…"); pullCloud(); };
+$("cloudPush").onclick = ()=>{ toast("Pushing…"); pushCloud().then(()=>toast(state.logs.some(l=>!l.cloud) ? "Push didn't finish — check connection" : "Cloud updated")); };
 $("syncUrl").onchange = e=>{ state.sync = state.sync || {}; state.sync.url = e.target.value.trim(); save(); toast("Endpoint saved"); };
 $("syncNow").onclick = ()=>{ if(!state.outbox.length){ toast("Nothing waiting"); return; } toast("Syncing…"); trySync().then(()=> toast(state.outbox.length ? "Still waiting — check the endpoint" : "Synced")); };
 $("soundChk").onchange = e=>{ state.settings.sound = e.target.checked; save(); };
@@ -696,6 +766,7 @@ renderHome();
 /* one-time: queue any sessions logged before sync existed */
 if(!state.outbox.length && state.logs.some(l=>!l.synced)){ state.logs.filter(l=>!l.synced).forEach(l=>state.outbox.push(buildPayload(l))); save(); }
 trySync();
+pullCloud();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(()=>{});
 </script>
 </body>
