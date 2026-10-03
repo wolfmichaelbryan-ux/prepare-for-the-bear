@@ -561,23 +561,27 @@ async function pushCloud(){
   cloudBusy=false; renderCloudStatus();
 }
 function mergeCloud(data){
-  let addedLogs=0, adopted=false;
+  let addedLogs=0, adopted=false, newest=null;
+  const localLastBefore = lastLogDate(state);          /* measured BEFORE merging, or both sides look tied */
   const have = new Set(state.logs.map(l=>l.id));
-  (data.logs||[]).forEach(txt=>{ try{ const l=JSON.parse(txt); if(l && l.id && !have.has(l.id)){ l.cloud=true; l.synced=true; state.logs.push(l); have.add(l.id); addedLogs++; } }catch(e){} });
+  (data.logs||[]).forEach(txt=>{ try{ const l=JSON.parse(txt); if(l && l.id && !have.has(l.id)){ l.cloud=true; l.synced=true; state.logs.push(l); have.add(l.id); addedLogs++; if(!newest || l.date > newest.date) newest=l; } }catch(e){} });
   state.logs.sort((a,b)=>a.id-b.id);
   const m = data.meta;
   if(m && typeof m==="object" && hasSubstance(m)){
     if(!state.updated) state.updated = lastLogDate(state) || null;
     /* where-am-I (cursor/rotation/deload) follows whichever device did the LATEST SESSION */
-    const localLast = lastLogDate(state), cloudLast = m.lastLog || "";
-    const cloudLedSession = !!cloudLast && cloudLast > localLast;
+    const cloudLedSession = !!newest && newest.date > localLastBefore;
     /* training maxes follow the latest EDIT (a TM you type on one phone should win on the other) */
     const cloudEditedLater = !!m.updated && (!state.updated || m.updated > state.updated);
     const tm = cloudEditedLater ? Object.assign({}, state.tm||{}, m.tm||{}) : Object.assign({}, m.tm||{}, state.tm||{});
     const best = {}; new Set([...Object.keys(m.best||{}), ...Object.keys(state.best||{})]).forEach(k=> best[k]=Math.max((m.best||{})[k]||0, (state.best||{})[k]||0));
     const last = {}; new Set([...Object.keys(m.last||{}), ...Object.keys(state.last||{})]).forEach(k=>{ const a=(m.last||{})[k], b=(state.last||{})[k]; last[k] = !b ? a : !a ? b : (((a.date||"") >= (b.date||"")) ? a : b); });
     state.tm=tm; state.best=best; state.last=last;
-    if(cloudLedSession){ if(m.cursor!=null) state.cursor=m.cursor; if(m.rotations!=null) state.rotations=m.rotations; if(m.deloadLeft!=null) state.deloadLeft=m.deloadLeft; adopted=true; }
+    if(cloudLedSession){
+      /* next session = whatever follows the newest session actually done, on any device */
+      const ni = ROTATION.indexOf(newest.sess); if(ni>=0) state.cursor=(ni+1)%6;
+      if(m.rotations!=null) state.rotations=m.rotations; if(m.deloadLeft!=null) state.deloadLeft=m.deloadLeft; adopted=true;
+    }
     if(m.updated && (!state.updated || m.updated > state.updated)) state.updated = m.updated;
   }
   return {addedLogs, adopted};
