@@ -251,7 +251,7 @@ const EX = {
   skull:   {n:"EZ-bar skullcrusher", kind:"acc", sets:3, lo:10, hi:12, start:65, inc:5, rest:60, unit:"lb", cue:"Bar to forehead/behind head. Elbows stay in."},
   pushdown:{n:"Rope pushdown", kind:"acc", sets:2, lo:12, hi:15, start:50, inc:10, rest:60, unit:"lb", cue:"Split the rope at the bottom."},
   dips:    {n:"Dips", kind:"bw", sets:3, lo:8, hi:12, start:0, inc:5, rest:90, unit:"+lb", cue:"Slight forward lean. When 12+ on all sets, add weight."},
-  facepull:{n:"Face pull", kind:"acc", sets:3, lo:15, hi:20, start:40, inc:5, rest:60, unit:"lb", cue:"Pull to the eyes, thumbs back. Rear delts, not traps."},
+  facepull:{n:"Face pull", kind:"acc", sets:3, lo:15, hi:20, start:40, inc:5, rest:60, unit:"lb", cue:"Pull to the eyes, thumbs back, lead with the RIGHT side. Blades down-and-back; if the right upper trap takes over, drop the weight."},
   flatDb:  {n:"Flat DB press", kind:"acc", sets:3, lo:8, hi:12, start:75, inc:5, rest:90, unit:"lb/hand", cue:"Full stretch at the bottom, controlled."},
   dbLat:   {n:"DB lateral raise", kind:"acc", sets:3, lo:12, hi:15, start:20, inc:5, rest:60, unit:"lb/hand", cue:"Slow down the negative."},
   ohTri:   {n:"Overhead cable triceps ext", kind:"acc", sets:3, lo:10, hi:12, start:50, inc:10, rest:60, unit:"lb", cue:"Long-head stretch — elbows by the ears."},
@@ -259,7 +259,7 @@ const EX = {
   csRow:   {n:"Chest-supported incline DB row", kind:"acc", sets:3, lo:8, hi:12, start:55, inc:5, rest:90, unit:"lb/hand", cue:"Chest on the bench — the neck-safe row. Drive elbows to the hips."},
   pallof:  {n:"Pallof press", kind:"core", sets:3, lo:10, hi:10, start:30, inc:5, rest:45, unit:"lb", per:"side", cue:"Anti-rotation. Press out, hold 2s, resist the twist."},
   latPull: {n:"Lat pulldown", kind:"acc", sets:3, lo:10, hi:12, start:140, inc:10, rest:75, unit:"lb", cue:"Lean back slightly, pull to the upper chest."},
-  rearDelt:{n:"Rear-delt cable fly", kind:"acc", sets:3, lo:15, hi:20, start:15, inc:5, rest:60, unit:"lb/side", cue:"Arms long, sweep back. Light weight, big squeeze."},
+  rearDelt:{n:"Rear-delt cable fly", kind:"acc", sets:4, lo:15, hi:20, start:15, inc:5, rest:60, unit:"lb/side", cue:"Right arm first and it sets the reps; set 4 is right arm only. Blade down-and-back FIRST, then the arm — no shrug. This is the shoulder-rehab lift."},
   ezCurl:  {n:"EZ-bar curl", kind:"acc", sets:3, lo:10, hi:12, start:65, inc:5, rest:60, unit:"lb", cue:"No swing. Elbows pinned."},
   hammer:  {n:"Hammer curl", kind:"acc", sets:2, lo:10, hi:12, start:35, inc:5, rest:60, unit:"lb/hand", cue:"Neutral grip, controlled."},
   wPull:   {n:"Weighted pull-ups", kind:"bw", sets:4, lo:6, hi:8, start:25, inc:5, rest:120, unit:"+lb", cue:"Belt or DB between the feet. Full hang, chin over."},
@@ -299,7 +299,7 @@ const SESS = {
     practice:"At practice today (once you're loose): 3 × 40 m sprint build-ups — 60% → 80% → 85%, walk back between. No max sprints.",
     blocks:[{t:"single",ex:["ssb"]},{t:"ss",ex:["hipThrust","pallof"]},{t:"ss",ex:["legCurlB","lunges"]},{t:"ss",ex:["legExt","slRdl"]}]},
 };
-const WARMUP = ["Bike — 2 min easy","90/90 hip switches ×6/side","Adductor rock-backs ×8","Standing thoracic extension ×8","Band pull-aparts ×15","Chin nods ×8 (gentle)"];
+const WARMUP = ["Bike — 2 min easy","90/90 hip switches ×6/side","Adductor rock-backs ×8","Standing thoracic extension ×8","Band pull-aparts ×15","Band external rotations ×12/side — right first, elbow pinned","Wall slides ×8 — ribs down, no shrug","Chin nods ×8 (gentle)"];
 const WARMUP_FSQ = "Wrist circles + front-rack stretch on the bar ×30s";
 
 /* ============================== STATE ============================== */
@@ -743,6 +743,7 @@ $("progDoc").innerHTML = `
 <li><b>Hamstrings:</b> hit every session they can — RDL, leg curls (3-second negatives), Nordics, single-leg work to find the weaker side. Sprint build-ups only at practice, only once you're warm, never at max.</li>
 <li><b>Hip:</b> 90/90s and adductor rock-backs in every warm-up. Front squat to the depth you own before the lean. Unilateral work is a friend.</li>
 <li><b>Bar on the neck:</b> never. Front squat (clean grip) and safety-bar only.</li>
+<li><b>Right shoulder rehab, built in:</b> the right side is strong in front and weak in back (it out-pressed the left on the landmine but lost to it on rear-delt flies). So the warm-up primes the posterior shoulder every day (band external rotations right-first, wall slides), rear-delt flies get a 4th right-arm-only set, and face pulls lead right. Cue on all of it: shoulder blade down-and-back <i>before</i> the arm moves. Chasing bigger pressing numbers on the right before the back catches up is how the neck flares.</li>
 </ul>
 <h3>Warm-up (every day, ~7 min)</h3>
 <p>Bike 2 min → 90/90 hip switches → adductor rock-backs → standing thoracic extension → band pull-aparts → chin nods → ramp sets of the main lift (the app lists them). Leg days add 5 minutes of low-volume plyos after the warm-up.</p>
